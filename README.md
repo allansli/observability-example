@@ -267,27 +267,79 @@ Grafana (Log Visualization)
 
 ### Quick Start
 ```bash
-# Clone and start all services
-git clone [repository-url]
-cd observability
-./scripts/start.sh
+# 1. Start infrastructure services
+docker-compose up -d postgres pubsub-emulator otel-collector jaeger prometheus grafana loki promtail
 
-# Generate test data
-./scripts/test-api.sh
+# 2. Wait for infrastructure to be ready
+docker-compose ps
+
+# 3. Build applications
+mvn clean package -DskipTests
+
+# 4. Start API service
+cd api-service
+OTEL_SERVICE_NAME=api-service \
+OTEL_RESOURCE_ATTRIBUTES=service.name=api-service,service.version=1.0.0,deployment.environment=development \
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf \
+OTEL_METRICS_EXPORTER=none \
+OTEL_LOGS_EXPORTER=none \
+java --enable-preview \
+-javaagent:../opentelemetry-javaagent.jar \
+-jar target/api-service-1.0.0-SNAPSHOT.jar
+
+# 5. Start subscriber service (in new terminal)
+cd subscriber-service
+OTEL_SERVICE_NAME=subscriber-service \
+OTEL_RESOURCE_ATTRIBUTES=service.name=subscriber-service,service.version=1.0.0,deployment.environment=development \
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf \
+OTEL_METRICS_EXPORTER=none \
+OTEL_LOGS_EXPORTER=none \
+java --enable-preview \
+-javaagent:../opentelemetry-javaagent.jar \
+-jar target/subscriber-service-1.0.0-SNAPSHOT.jar
+```
+
+### Create Test Data
+```bash
+# First create a customer
+curl -X POST http://localhost:8080/api/customers \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Test Customer", "email": "test@example.com"}'
+
+# Then create an order (use the customer ID from above)
+curl -X POST http://localhost:8080/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "CUSTOMER_ID_FROM_ABOVE",
+    "productName": "Test Product",
+    "quantity": 2,
+    "amount": 99.99
+  }'
 ```
 
 ### Access Points
 - **API Service**: http://localhost:8080
+  - Health: http://localhost:8080/actuator/health
+  - Metrics: http://localhost:8080/actuator/prometheus
+- **Subscriber Service**: http://localhost:8081
+  - Health: http://localhost:8081/actuator/health
+  - Metrics: http://localhost:8081/actuator/prometheus
 - **Grafana**: http://localhost:3001 (admin/admin)
 - **Prometheus**: http://localhost:9090
 - **Jaeger**: http://localhost:16686
+- **Loki**: http://localhost:3100
 
 ### Validation Checklist
-- [ ] All services healthy: `docker-compose ps`
-- [ ] API responds: `curl http://localhost:8080/api/v1/orders/health`
-- [ ] Metrics available: `curl http://localhost:8080/actuator/prometheus`
-- [ ] Traces in Jaeger: Check UI after API calls
-- [ ] Grafana dashboards: Verify data visualization
+- [x] All infrastructure services healthy: `docker-compose ps`
+- [x] API service responds: `curl http://localhost:8080/actuator/health`
+- [x] Subscriber service responds: `curl http://localhost:8081/actuator/health`
+- [x] Metrics available: `curl http://localhost:8080/actuator/prometheus`
+- [x] Subscriber metrics: `curl http://localhost:8081/actuator/prometheus`
+- [x] End-to-end distributed tracing: Create order and verify trace in Jaeger
+- [x] Message processing: Verify subscriber consumes and processes orders
+- [x] Database integration: Verify orders are saved and updated correctly
 
 ## 🔍 Observability Best Practices Demonstrated
 
