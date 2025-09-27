@@ -123,9 +123,10 @@ services:
     image: grafana/promtail:latest
     container_name: observability-promtail
     volumes:
-      - ./docker/promtail/promtail-config.yaml:/etc/promtail/config.yml
+      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml
       - /var/log:/var/log:ro
-      - ./logs:/app/logs:ro
+      - ./api-service/logs/api-service.log:/app/logs/api-service.log:ro
+      - ./subscriber-service/logs/subscriber-service.log:/app/logs/subscriber-service.log:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki

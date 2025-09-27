@@ -9,44 +9,39 @@ datasources:
     editable: true
     jsonData:
       httpMethod: POST
-      exemplarTraceIdDestinations:
-        - name: trace_id
-          datasourceUid: jaeger
-
-  - name: Jaeger
-    type: jaeger
-    access: proxy
-    url: http://jaeger:16686
-    uid: jaeger
-    editable: true
-    jsonData:
-      tracesToLogs:
-        datasourceUid: loki
-        tags: ['job', 'instance', 'pod', 'namespace']
-        mappedTags: [{ key: 'service.name', value: 'service' }]
-        mapTagNamesEnabled: false
-        spanStartTimeShift: '1h'
-        spanEndTimeShift: '1h'
-        filterByTraceID: false
-        filterBySpanID: false
-      tracesToMetrics:
-        datasourceUid: prometheus
-        tags: [{ key: 'service.name', value: 'service' }, { key: 'job' }]
-        queries:
-          - name: 'Sample query'
-            query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m]))'
-      nodeGraph:
-        enabled: true
+      queryTimeout: 60s
+      timeInterval: 15s
+      manageAlerts: true
+    secureJsonData: {}
 
   - name: Loki
     type: loki
     access: proxy
     url: http://loki:3100
-    uid: loki
     editable: true
     jsonData:
+      maxLines: 1000
       derivedFields:
         - datasourceUid: jaeger
-          matcherRegex: "traceID=(\\w+)"
+          matcherRegex: "(?:trace_id|traceId)[=:]([^\\s]+)"
           name: TraceID
-          url: "$${__value.raw}"
+          url: "http://localhost:16686/trace/${__value.raw}"
+    secureJsonData: {}
+
+  - name: Jaeger
+    type: jaeger
+    uid: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki
+        tags: ["trace_id"]
+        mappedTags: [{"key": "service.name", "value": "service"}]
+        mapTagNamesEnabled: false
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+        filterByTraceID: true
+        filterBySpanID: false
+    secureJsonData: {}

@@ -18,7 +18,7 @@ scrape_configs:
           job: api-service
           service_name: api-service
           environment: docker
-          __path__: /app/api-service/logs/*.log
+          __path__: /app/logs/api-service.log
     pipeline_stages:
       - json:
           expressions:
@@ -48,7 +48,7 @@ scrape_configs:
           job: subscriber-service
           service_name: subscriber-service
           environment: docker
-          __path__: /app/subscriber-service/logs/*.log
+          __path__: /app/logs/subscriber-service.log
     pipeline_stages:
       - json:
           expressions:
