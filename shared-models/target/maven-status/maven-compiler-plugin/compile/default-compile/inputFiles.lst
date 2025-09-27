@@ -1,0 +1,9 @@
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/event/OrderEvent.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/event/OrderEventType.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/model/Customer.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/model/Order.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/model/OrderStatus.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/util/JsonUtils.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/util/ValidationException.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/util/ValidationResult.java
+/home/allan/source/observability/shared-models/src/main/java/com/example/observability/util/ValidationUtils.java

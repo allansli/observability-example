@@ -1,0 +1,88 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'api-service'
+          static_configs:
+            - targets: ['host.docker.internal:8080']
+          scrape_interval: 15s
+          metrics_path: '/actuator/prometheus'
+        
+        - job_name: 'subscriber-service'
+          static_configs:
+            - targets: ['host.docker.internal:8081']
+          scrape_interval: 15s
+          metrics_path: '/actuator/prometheus'
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+  
+  resource:
+    attributes:
+      - key: service.namespace
+        value: observability-reference
+        action: upsert
+      - key: deployment.environment
+        value: development
+        action: upsert
+  
+  memory_limiter:
+    limit_mib: 512
+    check_interval: 1s
+  
+  probabilistic_sampler:
+    sampling_percentage: 100
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      environment: development
+  
+  debug:
+    verbosity: detailed
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  
+  pprof:
+    endpoint: 0.0.0.0:1777
+  
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, probabilistic_sampler, batch]
+      exporters: [otlp/jaeger, debug]
+    
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus, debug]
+  
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed

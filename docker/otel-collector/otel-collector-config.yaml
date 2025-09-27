@@ -1,0 +1,102 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'api-service'
+          static_configs:
+            - targets: ['api-service:8080']
+          metrics_path: '/actuator/prometheus'
+          scrape_interval: 30s
+        - job_name: 'subscriber-service'
+          static_configs:
+            - targets: ['subscriber-service:8081']
+          metrics_path: '/actuator/prometheus'
+          scrape_interval: 30s
+
+processors:
+  # Batch processor for better performance
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+  
+  # Resource processor to add consistent attributes
+  resource:
+    attributes:
+      - key: cluster.name
+        value: "observability-demo"
+        action: insert
+      - key: deployment.environment
+        value: "docker"
+        action: insert
+  
+  # Memory limiter processor
+  memory_limiter:
+    limit_mib: 512
+  
+  # Probabilistic sampling for traces
+  probabilistic_sampler:
+    sampling_percentage: 100
+
+exporters:
+  # OTLP to Jaeger for traces
+  otlp/jaeger:
+    endpoint: http://jaeger:4318
+    tls:
+      insecure: true
+  
+  # Prometheus for metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      environment: docker
+  
+  # OTLP for metrics to external systems (if needed)
+  otlp/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
+    tls:
+      insecure: true
+  
+  # Debug exporter for debugging
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1888
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, probabilistic_sampler]
+      exporters: [otlp/jaeger, debug]
+    
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource]
+      exporters: [prometheus, debug]
+    
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [debug]
+
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      level: detailed

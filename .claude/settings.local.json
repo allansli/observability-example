@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(mvn clean:*)",
+      "Bash(find:*)",
+      "Bash(docker-compose config:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(java:*)",
+      "Bash(wget:*)",
+      "Bash(OTEL_SERVICE_NAME=api-service )",
+      "Bash(OTEL_RESOURCE_ATTRIBUTES=service.name=api-service,service.version=1.0.0,deployment.environment=development )",
+      "Bash(OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 )",
+      "Bash(OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf )",
+      "Bash(OTEL_METRICS_EXPORTER=none )",
+      "Bash(OTEL_LOGS_EXPORTER=none )",
+      "Bash(pkill:*)",
+      "Bash(netstat:*)",
+      "Bash(lsof:*)",
+      "Bash(OTEL_SERVICE_NAME=subscriber-service )",
+      "Bash(OTEL_RESOURCE_ATTRIBUTES=service.name=subscriber-service,service.version=1.0.0,deployment.environment=development )",
+      "Bash(xargs kill:*)",
+      "Bash(killall:*)",
+      "Bash(awk:*)",
+      "Bash(xargs -r kill -9)",
+      "Bash(mvn:*)",
+      "Bash(ss:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

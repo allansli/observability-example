@@ -1,0 +1,79 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # API Service logs
+  - job_name: api-service
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: api-service
+          service_name: api-service
+          environment: docker
+          __path__: /app/api-service/logs/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            message: message
+            service: service
+            traceId: traceId
+            spanId: spanId
+            correlationId: correlationId
+            orderId: orderId
+      - labels:
+          level:
+          service:
+          traceId:
+          spanId:
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02T15:04:05.000Z'
+
+  # Subscriber Service logs
+  - job_name: subscriber-service
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: subscriber-service
+          service_name: subscriber-service
+          environment: docker
+          __path__: /app/subscriber-service/logs/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            message: message
+            service: service
+            traceId: traceId
+            spanId: spanId
+            correlationId: correlationId
+            orderId: orderId
+      - labels:
+          level:
+          service:
+          traceId:
+          spanId:
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02T15:04:05.000Z'
+
+  # System logs
+  - job_name: syslog
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          __path__: /var/log/syslog
